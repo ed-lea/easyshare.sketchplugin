@@ -1,0 +1,28 @@
+{
+    "name": "Easy Share",
+    "description": "Share one or more artboards with anyone",
+    "author": "@ed_lea",
+    "homepage": "http://easier.cc",
+    "version": 0.1,
+    "identifier": "com.example.sketch.easysharecc",
+    "updateURL": "https://github.com/ed-lea/easyshare",
+    "compatibleVersion": 3,
+    "bundleVersion": 0.1,
+    "commands":
+        [
+            {
+                "name": "Share Artboards",
+                "identifier": "all-artboards",
+                "shortcut": "option command e",
+                "script": "app.js",
+                "handler": "exportAll"
+            }
+        ],
+    "menu":
+    {
+        "items":
+            [
+                "all-artboards"
+            ]
+    }
+}
