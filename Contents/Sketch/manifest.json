@@ -15,7 +15,7 @@
                 "identifier": "all-artboards",
                 "shortcut": "option command e",
                 "script": "app.js",
-                "handler": "exportAll"
+                "handler": "onRun"
             }
         ],
     "menu":

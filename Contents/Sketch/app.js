@@ -6,10 +6,11 @@
  */
 
 
+var endpoint = "http://easier.cc";
 
 
-
-var exportAll = function(context){
+var onRun = function(context){
+    log(endpoint);
     var doc = context.document;
     var selection = context.selection;
     var pages = getAllPages(context);
@@ -22,7 +23,7 @@ function requestUri(){
         "-v",
         "-X", "GET",
         "--header", "User-Agent: Sketch",
-        "http://127.0.0.1:8000/app_dev.php/request/id", nil);
+        endpoint + "/request/id", nil);
     task.setArguments(args);
 
     var outputPipe = [NSPipe pipe];
@@ -38,7 +39,7 @@ function requestUri(){
 function getAllPages(context){
 
     var doc = context.document;
-    doc.showMessage("Uploading Artboards...");
+    doc.showMessage("Uploading Artboards... (Spinning beachball is normal)");
     /*
      * Set up initial variables
      */
@@ -63,6 +64,7 @@ function getAllPages(context){
     }
 
 
+
     for (index = 0; index < pageCount; ++index) {
         var page = pages[index];
 
@@ -74,18 +76,18 @@ function getAllPages(context){
         var artboardsCount = artboards.count();
         if (artboardsCount >= 1){
             for (i = 0; i < artboardsCount; ++i) {
+                doc.showMessage("Uploading artboard " + (i+1) + " of " + artboardsCount + " (on page " + (index+1) + " of " + pageCount + ")");
                 var artboard = artboards[i];
                 var filename = safeName(artboard.name()) + ".png";
                 var path = tempDir + filename;
                 [doc saveArtboardOrSlice:artboard toFile:path];
                 var result = post(path, filename, uniqueId);
-                doc.showMessage("Completed page " + (index+1) + " of " + pageCount);
-                log( "this artboard " + artboard.name() + " is on " + page.name() + " in " + path )
+                // log( "this artboard " + artboard.name() + " is on " + page.name() + " in " + path )
             }
         }
     }
 
-    var url = "http://127.0.0.1:8000/app_dev.php" + "/view/" + uniqueId;
+    var url = endpoint + "/view/" + uniqueId;
 
     successWindow(context, url, update);
 //    dialog("Files Uploaded", "Visit: http://127.0.0.1:8000/app_dev.php" + "/view/" + uniqueId);
@@ -104,7 +106,7 @@ function post(path, filename, uniqueId){
         "--form", "sketchartboard=@" + path,
         "--form", "filename=" + filename,
         "--form", "id=" + uniqueId,
-        "http://127.0.0.1:8000/app_dev.php/upload/sketch", nil);
+        endpoint + "/upload/sketch", nil);
     task.setArguments(args);
 
     var outputPipe = [NSPipe pipe];
@@ -164,7 +166,7 @@ function successWindow(context, viewURL, update){
         updateButton.setTitle("Updates Available");
         [updateButton setBezelStyle:NSRoundedBezelStyle]
         [updateButton setCOSJSTargetFunction:function(sender) {
-            var updateUrl = [NSURL URLWithString:@"http://bbc.co.uk/"];
+            var updateUrl = [NSURL URLWithString:@"http://easier.cc/"];
             if( ![[NSWorkspace sharedWorkspace] openURL:updateUrl] ){
                 sketchLog(@"Could not open url:" + [updateUrl description])
             }
