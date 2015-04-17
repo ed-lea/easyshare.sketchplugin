@@ -16,7 +16,7 @@
  *  Plugin by Ed Lea http://edlea.com
  *
  *
- *  Version 0.1beta
+ *  Version 0.2 beta
  *
  */
 
@@ -71,7 +71,7 @@ function getSelectedPages(context){
      * if not, send an update reminder.
      *
      */
-    if( version > 0.1 ){
+    if( version > 0.2 ){
         // this means the plugin is out of date.
         // help the user update the plugin
         update = true;
@@ -118,7 +118,7 @@ function getAllPages(context){
      * if not, send an update reminder.
      *
      */
-    if( version > 0.1 ){
+    if( version > 0.2 ){
         // this means the plugin is out of date.
         // help the user update the plugin
         update = true;
