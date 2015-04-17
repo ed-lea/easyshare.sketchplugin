@@ -6,14 +6,18 @@
  */
 
 
-var endpoint = "http://easier.cc";
+var endpoint = "http://easier.cc",
+    tempDir     = NSTemporaryDirectory();
 
 
 var onRun = function(context){
-    log(endpoint);
     var doc = context.document;
     var selection = context.selection;
-    var pages = getAllPages(context);
+    if ( selection.count() > 0 ){
+        var pages = getSelectedPages(context);
+    } else {
+        var pages = getAllPages(context);
+    }
 }
 
 function requestUri(){
@@ -36,16 +40,52 @@ function requestUri(){
     return JSON.parse(outputString);
 }
 
+function getSelectedPages(context){
+
+    var doc             = context.document,
+        artboards       = context.selection,
+        artboardsCount  = artboards.count(),
+        json            = requestUri(),
+        update          = false;
+    var uniqueId    = String( json.id ); 
+    var version     = String( json.version ); // plugin version
+
+    doc.showMessage("Uploading Selected Artboards... (Spinning beachball is normal)");
+
+    /*
+     * Check if this plugin version is up to date,
+     * if not, send an update reminder.
+     *
+     */
+    if( version > 0.1 ){
+        // this means the plugin is out of date.
+        // help the user update the plugin
+        update = true;
+    }
+
+    for (i = 0; i < artboardsCount; ++i) {
+        doc.showMessage("Uploading artboard " + (i+1) + " of " + artboardsCount);
+        var artboard = artboards[i];
+        var filename = safeName(artboard.name()) + ".png";
+        var path = tempDir + filename;
+        [doc saveArtboardOrSlice:artboard toFile:path];
+        var result = post(path, filename, uniqueId);
+        // log( "this artboard " + artboard.name() + " is on " + page.name() + " in " + path )
+    }
+    var url = endpoint + "/view/" + uniqueId;
+
+    successWindow(context, url, update);
+}
+
 function getAllPages(context){
 
     var doc = context.document;
-    doc.showMessage("Uploading Artboards... (Spinning beachball is normal)");
+    doc.showMessage("Uploading All Artboards... (Spinning beachball is normal)");
     /*
      * Set up initial variables
      */
     var pages       = doc.pages(),
         pageCount   = pages.count(),
-        tempDir     = NSTemporaryDirectory(),
         json        = requestUri(),
         update      = false;
 
