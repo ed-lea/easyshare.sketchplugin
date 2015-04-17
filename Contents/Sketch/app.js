@@ -1,12 +1,26 @@
 /*
- * TODO
- * - Add notifications
- * - Find a non-blocking way to send all artboards
- * - Work through a selection
+ *
+ *  This is a plugin for Sketch App http://bohemiancoding.com/sketch/
+ *
+ *  The plugin works by uploading your artboards and putting them on a
+ *  private URL so that you can share them via email or chat.
+ *
+ *  It's the easiest and quickest way to share your Sketch work in progress
+ *
+ * * * * * * * * * * * * * * * * * * *
+ *                                   *
+ *  Read more at http://easier.cc/   *
+ *                                   *
+ * * * * * * * * * * * * * * * * * * *
+ *
+ *  Plugin by Ed Lea http://edlea.com
+ *
+ *
+ *  Version 0.1beta
+ *
  */
 
-
-var endpoint = "http://easier.cc",
+var endpoint    = "http://easier.cc",
     tempDir     = NSTemporaryDirectory();
 
 
@@ -63,18 +77,25 @@ function getSelectedPages(context){
         update = true;
     }
 
-    for (i = 0; i < artboardsCount; ++i) {
-        doc.showMessage("Uploading artboard " + (i+1) + " of " + artboardsCount);
-        var artboard = artboards[i];
-        var filename = safeName(artboard.name()) + ".png";
-        var path = tempDir + filename;
-        [doc saveArtboardOrSlice:artboard toFile:path];
-        var result = post(path, filename, uniqueId);
-        // log( "this artboard " + artboard.name() + " is on " + page.name() + " in " + path )
-    }
-    var url = endpoint + "/view/" + uniqueId;
+    if (artboardsCount >= 1){
+        for (i = 0; i < artboardsCount; ++i) {
+            doc.showMessage("Uploading artboard " + (i+1) + " of " + artboardsCount);
+            var artboard = artboards[i];
+            if ( isArtboard(artboard) ){
+                var filename = safeName(artboard.name()) + ".png";
+                var path = tempDir + filename;
+                [doc saveArtboardOrSlice:artboard toFile:path];
+                var result = post(path, filename, uniqueId);
+            } else {
+                doc.showMessage("You can't share floating layers, only artboards will be uploaded.");
+            }
+        }
+        var url = endpoint + "/view/" + uniqueId;
 
-    successWindow(context, url, update);
+        copyText(url);
+        successWindow(context, url, update);
+
+    }
 }
 
 function getAllPages(context){
@@ -128,10 +149,8 @@ function getAllPages(context){
     }
 
     var url = endpoint + "/view/" + uniqueId;
-
+    copyText(url);
     successWindow(context, url, update);
-//    dialog("Files Uploaded", "Visit: http://127.0.0.1:8000/app_dev.php" + "/view/" + uniqueId);
-
 }
 
 
@@ -177,18 +196,41 @@ function successWindow(context, viewURL, update){
 
     // create the enclosing window
     var win     = NSWindow.alloc().init();
-    [win setFrame:NSMakeRect(0, 0, 320, 200) display:false]
+    [win setFrame:NSMakeRect(0, 0, 300, 180) display:false]
+    [win setBackgroundColor:[NSColor colorWithCalibratedRed:(230/255) green:(230/255) blue:(230/255) alpha:1]]
+
+
+    // create the title
+    var titleTxt = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 40, 300, 100)]
+    [titleTxt setEditable:false]
+    [titleTxt setBordered:false]
+    [titleTxt setTextColor:[NSColor colorWithCalibratedRed:(50/255) green:(50/255) blue:(50/255) alpha:1]]
+    [titleTxt setDrawsBackground:false]
+    [titleTxt setFont:[NSFont boldSystemFontOfSize:13]];
+    [titleTxt setStringValue:"Sharing Artboards"]
+    [[win contentView] addSubview:titleTxt]
+
+
+    // create the body
+    var bodyTxt = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 60, 260, 50)]
+    [bodyTxt setEditable:false]
+    [bodyTxt setBordered:false]
+    [bodyTxt setTextColor:[NSColor colorWithCalibratedRed:(80/255) green:(80/255) blue:(80/255) alpha:1]]
+    [bodyTxt setDrawsBackground:false]
+    [bodyTxt setFont:[NSFont userFontOfSize:13]];
+    [bodyTxt setStringValue:"A link to your artboards has been copied to your clipboard."]
+    [[win contentView] addSubview:bodyTxt]
 
 
     // create the buttons wrapper
-    var buttonWrapper = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 320, 150)];
-        buttonWrapper.setWantsLayer(true);
-        [[win contentView] addSubview:buttonWrapper];
+    var buttonWrapper = [[NSView alloc] initWithFrame:NSMakeRect(0, 10, 300, 100)];
+    buttonWrapper.setWantsLayer(true);
+    [[win contentView] addSubview:buttonWrapper];
 
 
 
     // create the done button
-    var doneButton = [[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 92, 32)]
+    var doneButton = [[NSButton alloc] initWithFrame:NSMakeRect(16, 0, 92, 32)]
     [doneButton setTitle:"Done"]
     [doneButton setBezelStyle:NSRoundedBezelStyle]
     [doneButton setCOSJSTargetFunction:function(sender) {
@@ -201,9 +243,9 @@ function successWindow(context, viewURL, update){
 
     if ( update ){
         // create the update button
-        var updateRect = NSMakeRect(50, 0, 160, 32);
+        var updateRect = NSMakeRect(16, 30, 274, 32);
         var updateButton = NSButton.alloc().initWithFrame(updateRect);
-        updateButton.setTitle("Updates Available");
+        updateButton.setTitle("Recommended: Update This Plugin");
         [updateButton setBezelStyle:NSRoundedBezelStyle]
         [updateButton setCOSJSTargetFunction:function(sender) {
             var updateUrl = [NSURL URLWithString:@"http://easier.cc/"];
@@ -217,19 +259,32 @@ function successWindow(context, viewURL, update){
 
 
     // create the URL button
-    var rect = NSMakeRect(150, 0, 160, 32);
+    var rect = NSMakeRect(110, 0, 180, 32);
     var linkButton = NSButton.alloc().initWithFrame(rect);
-        linkButton.setTitle("Click to view link");
-        [linkButton setBezelStyle:NSRoundedBezelStyle]
-        [linkButton setCOSJSTargetFunction:function(sender) {
-            var url = NSURL.URLWithString(String( viewURL ));
-            if( ![[NSWorkspace sharedWorkspace] openURL:url] ){
-                sketchLog(@"Could not open url:" + [url description])
-            }
-        }];
-        [linkButton setAction:"callAction:"]
-        [buttonWrapper addSubview:linkButton]
+    linkButton.setTitle("Click to view link");
+    [linkButton setBezelStyle:NSRoundedBezelStyle]
+    [linkButton setCOSJSTargetFunction:function(sender) {
+        var url = NSURL.URLWithString(String( viewURL ));
+        if( ![[NSWorkspace sharedWorkspace] openURL:url] ){
+            sketchLog(@"Could not open url:" + [url description])
+        }
+    }];
+    [linkButton setAction:"callAction:"]
+    [buttonWrapper addSubview:linkButton]
+
+
+
 
 
     [NSApp runModalForWindow:win]
+}
+
+function isArtboard(arboard) {
+    return [arboard isMemberOfClass:[MSArtboardGroup class]]
+}
+
+function copyText(txt){
+    var pasteBoard = [NSPasteboard generalPasteboard]
+        [pasteBoard declareTypes:[NSArray arrayWithObject:NSPasteboardTypeString] owner:nil]
+    [pasteBoard setString:txt forType:NSPasteboardTypeString]
 }
